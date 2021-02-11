@@ -150,7 +150,7 @@ fn main() -> ! {
     };
 
     let usb_bus = UsbBus::new(usb_peripheral, unsafe { &mut EP_MEMORY });
-    let mut cdc = usbd_serial::SerialPort::new_with_store(&usb_bus, [0u8; 1024], [0u8; 1024]);
+    let mut cdc = usbd_serial::SerialPort::new_with(&usb_bus, [0u8; 1024], [0u8; 1024], 512);
     let mut winusb = winusb::MicrosoftDescriptors;
 
     let mut device = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16D0, 0x0FE9))
