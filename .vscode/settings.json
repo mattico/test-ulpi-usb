@@ -1,0 +1,11 @@
+{
+    "[rust]": {
+        "editor.formatOnSave": true,
+        "editor.formatOnPaste": true
+    },
+
+    "rust-analyzer.inlayHints.typeHints": false,
+    "rust-analyzer.cargo.loadOutDirsFromCheck": true,
+    "rust-analyzer.checkOnSave.allTargets": false,
+    "terminal.integrated.scrollback": 10000,
+}
