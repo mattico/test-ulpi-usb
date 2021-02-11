@@ -19,43 +19,17 @@ static mut EP_MEMORY: [u32; 1024] = [0; 1024];
 #[cortex_m_rt::entry]
 fn main() -> ! {
     let dp = stm32::Peripherals::take().unwrap();
-    let _cp = stm32::CorePeripherals::take().unwrap();
+    let mut cp = stm32::CorePeripherals::take().unwrap();
 
     // Initialize low-level hardware
     let ccdr = {
-        // Allow debugging while sleeping or stopped
-        // dp.DBGMCU.cr.modify(|_, w| {
-        //     w.dbgsleep_d1()
-        //         .set_bit()
-        //         .dbgstby_d1()
-        //         .set_bit()
-        //         .dbgstop_d1()
-        //         .set_bit()
-        //         .dbgsleep_d1()
-        //         .set_bit()
-        //         .d1dbgcken()
-        //         .set_bit()
-        //         .d3dbgcken()
-        //         .set_bit()
-        // });
-
         // Enable CPU caches
-        // cp.SCB.enable_icache();
-        // cp.SCB.enable_dcache(&mut cp.CPUID);
+        cp.SCB.enable_icache();
+        cp.SCB.enable_dcache(&mut cp.CPUID);
 
         let pwr = dp.PWR.constrain();
         // Enable Voltage Offset 0 - 480MHz Overdrive
         let pwrcfg = pwr.vos0(&dp.SYSCFG).freeze();
-
-        // Enable SRAMs
-        // dp.RCC.ahb2enr.modify(|_, w| {
-        //     w.sram1en()
-        //         .enabled()
-        //         .sram2en()
-        //         .enabled()
-        //         .sram3en()
-        //         .enabled()
-        // });
 
         // Configure clocks
         let rcc = dp.RCC.constrain();
@@ -125,17 +99,12 @@ fn main() -> ! {
         usb_global: dp.OTG1_HS_GLOBAL,
         usb_device: dp.OTG1_HS_DEVICE,
         usb_pwrclk: dp.OTG1_HS_PWRCLK,
-        ulpi_dir: gpioc
-            .pc2
-            .into_alternate_af10()
-            .set_speed(Speed::High)
-            .into(),
+        prec: prec.USB1OTG,
+        hclk: clocks.hclk(),
+        ulpi_clk: gpioa.pa5.into_alternate_af10(),
+        ulpi_dir: gpioc.pc2.into_alternate_af10().into(),
+        ulpi_nxt: gpioc.pc3.into_alternate_af10().into(),
         ulpi_stp: gpioc.pc0.into_alternate_af10().set_speed(Speed::High),
-        ulpi_nxt: gpioc
-            .pc3
-            .into_alternate_af10()
-            .set_speed(Speed::High)
-            .into(),
         ulpi_d0: gpioa.pa3.into_alternate_af10().set_speed(Speed::High),
         ulpi_d1: gpiob.pb0.into_alternate_af10().set_speed(Speed::High),
         ulpi_d2: gpiob.pb1.into_alternate_af10().set_speed(Speed::High),
@@ -144,9 +113,6 @@ fn main() -> ! {
         ulpi_d5: gpiob.pb12.into_alternate_af10().set_speed(Speed::High),
         ulpi_d6: gpiob.pb13.into_alternate_af10().set_speed(Speed::High),
         ulpi_d7: gpiob.pb5.into_alternate_af10().set_speed(Speed::High),
-        ulpi_clk: gpioa.pa5.into_alternate_af10().set_speed(Speed::High),
-        prec: prec.USB1OTG,
-        hclk: clocks.hclk(),
     };
 
     let usb_bus = UsbBus::new(usb_peripheral, unsafe { &mut EP_MEMORY });
