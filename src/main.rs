@@ -80,11 +80,36 @@ fn main() -> ! {
     let _gpiod = dp.GPIOD.split(prec.GPIOD);
     let _gpioe = dp.GPIOE.split(prec.GPIOE);
     let _gpiof = dp.GPIOF.split(prec.GPIOF);
-    let _gpiog = dp.GPIOG.split(prec.GPIOG);
+    let gpiog = dp.GPIOG.split(prec.GPIOG);
     let _gpioh = dp.GPIOH.split(prec.GPIOH);
     let _gpioi = dp.GPIOI.split(prec.GPIOI);
     let gpioj = dp.GPIOJ.split(prec.GPIOJ);
     let _gpiok = dp.GPIOK.split(prec.GPIOK);
+
+    let debug_btn = gpiog.pg8.into_pull_up_input();
+    us_timer::wait(10.ms()); // Wait for pull-up to charge debounce cap
+    if debug_btn.is_low().unwrap() {
+        defmt::info!("Pausing startup due to debug button press");
+
+        let mut released = false;
+        let mut pressed = false;
+        loop {
+            match (released, pressed, debug_btn.is_low().unwrap()) {
+                (true, true, true) => {
+                    defmt::info!("Resuming startup due to debug button press");
+                    break;
+                }
+                (_, _, false) => {
+                    released = true;
+                    pressed = false;
+                }
+                (_, _, true) => {
+                    pressed = true;
+                }
+            };
+            us_timer::wait(10.ms());
+        }
+    }
 
     defmt::info!("Initializing USB");
 
@@ -143,11 +168,15 @@ fn main() -> ! {
     vid |= (bus.ulpi_read(0x01).unwrap_or(0) as u16) << 8;
     let mut pid: u16 = bus.ulpi_read(0x02).unwrap_or(0) as u16;
     pid |= (bus.ulpi_read(0x03).unwrap_or(0) as u16) << 8;
-    defmt::info!(
-        "USB Initialized: PHY VID={=u16:x} PHY PID={=u16:x}",
-        vid,
-        pid
-    );
+    if vid == 0 || pid == 0 {
+        defmt::panic!("USB PHY Not Responding");
+    } else {
+        defmt::info!(
+            "USB Initialized: PHY VID={=u16:x} PHY PID={=u16:x}",
+            vid,
+            pid
+        );
+    }
 
     let mut old_state = device.state();
     let mut last_print = us_timer::timestamp();
