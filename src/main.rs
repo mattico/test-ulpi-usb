@@ -132,6 +132,7 @@ fn main() -> ! {
         .manufacturer("Test")
         .product("USB Test")
         .device_class(usbd_serial::USB_CLASS_CDC)
+        .device_sub_class(2)
         .self_powered(true)
         .max_power(0)
         .max_packet_size_0(64)
@@ -152,9 +153,10 @@ fn main() -> ! {
     let mut last_print = us_timer::timestamp();
 
     loop {
-        if device.poll(&mut [&mut winusb, &mut cdc]) {
-            usb_led.toggle().unwrap();
+        if !device.poll(&mut [&mut winusb, &mut cdc]) {
+            continue;
         }
+        usb_led.toggle().unwrap();
 
         let new_state = device.state();
         if new_state != old_state {

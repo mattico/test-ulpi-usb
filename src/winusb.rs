@@ -50,6 +50,7 @@ pub struct MicrosoftDescriptors;
 impl<B: UsbBus> UsbClass<B> for MicrosoftDescriptors {
     fn control_in(&mut self, xfer: ControlIn<B>) {
         let req = xfer.request();
+        defmt::debug!("winusb::control_in({:?})", defmt::Debug2Format(&req));
         if req.request_type != RequestType::Vendor {
             return;
         }
@@ -57,6 +58,7 @@ impl<B: UsbBus> UsbClass<B> for MicrosoftDescriptors {
         if req.request == GET_OS_FEATURE {
             match OSFeatureDescriptorType::try_from(req.index) {
                 Ok(OSFeatureDescriptorType::CompatibleID) => {
+                    defmt::debug!("winusb CompatibleID");
                     // Handle request for an Extended Compatible ID Descriptor.
                     // Interface number is ignored as there is only one device-wide
                     // Compatible ID Descriptor.
@@ -66,6 +68,7 @@ impl<B: UsbBus> UsbClass<B> for MicrosoftDescriptors {
                     // Handle request for an Extended Properties OS Descriptor.
                     match req.value as u8 {
                         2 => {
+                            defmt::debug!("winusb Extended Properties OS Descriptor");
                             xfer.accept_with_static(&IF2_MS_PROPERTIES_OS_DESCRIPTOR)
                                 .ok();
                         }
