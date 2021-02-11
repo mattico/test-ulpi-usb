@@ -205,32 +205,9 @@ fn main() -> ! {
         }
         old_state = new_state;
 
-        if !device.poll(&mut [&mut winusb, &mut cdc]) {
-            continue;
+        if device.poll(&mut [&mut winusb, &mut cdc]) {
+            usb_led.toggle().unwrap();
         }
-        usb_led.toggle().unwrap();
-
-        // let mut buf = [0u8; 64];
-        // match cdc.read(&mut buf) {
-        //     Ok(count) if count > 0 => {
-        //         // Echo back in upper case
-        //         for c in buf[0..count].iter_mut() {
-        //             if 0x61 <= *c && *c <= 0x7a {
-        //                 *c &= !0x20;
-        //             }
-        //         }
-        //         let mut write_offset = 0;
-        //         while write_offset < count {
-        //             match cdc.write(&buf[write_offset..count]) {
-        //                 Ok(len) if len > 0 => {
-        //                     write_offset += len;
-        //                 }
-        //                 _ => {}
-        //             }
-        //         }
-        //     }
-        //     _ => {}
-        // }
 
         let mut buf = [0u8; 64];
         match cdc.read(&mut buf) {
@@ -257,19 +234,4 @@ fn main() -> ! {
             }
         }
     }
-}
-
-#[defmt::panic_handler]
-fn defmt_panic() -> ! {
-    cortex_m::asm::udf();
-}
-
-#[cortex_m_rt::exception]
-fn HardFault(ef: &cortex_m_rt::ExceptionFrame) -> ! {
-    defmt::panic!("Hard Fault: {:?}", defmt::Debug2Format(&ef));
-}
-
-#[cortex_m_rt::exception]
-fn DefaultHandler(irqn: i16) {
-    defmt::panic!("DefaultHandler IRQn: {=i16}", irqn);
 }
