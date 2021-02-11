@@ -152,7 +152,9 @@ fn main() -> ! {
     let mut last_print = us_timer::timestamp();
 
     loop {
-        let new_data = device.poll(&mut [&mut winusb, &mut cdc]);
+        if device.poll(&mut [&mut winusb, &mut cdc]) {
+            usb_led.toggle().unwrap();
+        }
 
         let new_state = device.state();
         if new_state != old_state {
@@ -177,10 +179,6 @@ fn main() -> ! {
         }
         old_state = new_state;
 
-        if new_data {
-            usb_led.toggle().unwrap();
-        }
-
         let mut buf = [0u8; 64];
         match cdc.read(&mut buf) {
             Ok(n) if n > 0 => {
@@ -197,7 +195,7 @@ fn main() -> ! {
         }
 
         let now = us_timer::timestamp();
-        if now - last_print >= 1000_000 {
+        if now - last_print >= 1000_000 && new_state == UsbDeviceState::Configured {
             last_print = now;
             defmt::info!("writing {}", now);
             match cdc.write(&now.to_le_bytes()) {
