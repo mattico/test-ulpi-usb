@@ -33,7 +33,7 @@ _stack_start = ORIGIN(RAM) + LENGTH(RAM);
    `_stext` symbol.  By default it will place after .vector_table */
 /* _stext = ORIGIN(FLASH) + 0x40c; */
 
-SECTIONS {
+/* SECTIONS {
   .axisram : ALIGN(8) {
     *(.axisram .axisram.*);
     . = ALIGN(8);
@@ -58,4 +58,4 @@ SECTIONS {
     *(.bsram .bsram.*);
     . = ALIGN(4);
     } > BSRAM
-} INSERT AFTER .bss;
+} INSERT AFTER .bss; */

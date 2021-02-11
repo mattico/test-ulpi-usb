@@ -150,7 +150,7 @@ fn main() -> ! {
     };
 
     let usb_bus = UsbBus::new(usb_peripheral, unsafe { &mut EP_MEMORY });
-    let mut cdc = usbd_serial::SerialPort::new(&usb_bus);
+    let mut cdc = usbd_serial::SerialPort::new_with_store(&usb_bus, [0u8; 1024], [0u8; 1024]);
     let mut winusb = winusb::MicrosoftDescriptors;
 
     let mut device = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16D0, 0x0FE9))
@@ -182,11 +182,6 @@ fn main() -> ! {
     let mut last_print = us_timer::timestamp();
 
     loop {
-        if !device.poll(&mut [&mut winusb, &mut cdc]) {
-            continue;
-        }
-        usb_led.toggle().unwrap();
-
         let new_state = device.state();
         if new_state != old_state {
             match new_state {
@@ -209,6 +204,33 @@ fn main() -> ! {
             }
         }
         old_state = new_state;
+
+        if !device.poll(&mut [&mut winusb, &mut cdc]) {
+            continue;
+        }
+        usb_led.toggle().unwrap();
+
+        // let mut buf = [0u8; 64];
+        // match cdc.read(&mut buf) {
+        //     Ok(count) if count > 0 => {
+        //         // Echo back in upper case
+        //         for c in buf[0..count].iter_mut() {
+        //             if 0x61 <= *c && *c <= 0x7a {
+        //                 *c &= !0x20;
+        //             }
+        //         }
+        //         let mut write_offset = 0;
+        //         while write_offset < count {
+        //             match cdc.write(&buf[write_offset..count]) {
+        //                 Ok(len) if len > 0 => {
+        //                     write_offset += len;
+        //                 }
+        //                 _ => {}
+        //             }
+        //         }
+        //     }
+        //     _ => {}
+        // }
 
         let mut buf = [0u8; 64];
         match cdc.read(&mut buf) {

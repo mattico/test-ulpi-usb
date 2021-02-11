@@ -8,23 +8,16 @@ edition = "2018"
 cortex-m-rt = "0.6.13"
 num_enum = { version = "0.5", default-features = false }
 alloc-cortex-m = "0.4.1"
-
-[dependencies.cortex-m]
-version = "0.7.1"
+usb-device = "0.2.5"
+cortex-m = "0.7.1"
 
 [dependencies.stm32h7xx-hal]
 features = ["stm32h743v", "rt", "usb_hs"]
-path = "stm32h7xx-hal"
+git = "https://github.com/mattico/stm32h7xx-hal"
+branch = "usb-patches"
 
 [dependencies.usbd-serial]
 path = "usbd-serial"
-
-[dependencies.usb-device]
-path = "usb-device"
-
-[dependencies.synopsys-usb-otg]
-path = "synopsys-usb-otg"
-features = ["cortex-m", "hs"]
 
 [dependencies.defmt]
 git = "https://github.com/knurling-rs/defmt"
@@ -47,9 +40,3 @@ defmt-debug = []
 defmt-info = []
 defmt-warn = []
 defmt-error = []
-
-[patch.crates-io]
-usbd-serial = { path = "usbd-serial" }
-synopsys-usb-otg = { path = "synopsys-usb-otg" }
-usb-device = { path = "usb-device" }
-#stm32-usbd = { path = "stm32-usbd" }
