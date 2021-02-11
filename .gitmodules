@@ -1,3 +1,12 @@
 [submodule "stm32h7xx-hal"]
 	path = stm32h7xx-hal
 	url = https://github.com/mattico/stm32h7xx-hal
+[submodule "usb-device"]
+	path = usb-device
+	url = https://github.com/mvirkkunen/usb-device
+[submodule "synopsys-usb-otg"]
+	path = synopsys-usb-otg
+	url = https://github.com/mattico/synopsys-usb-otg
+[submodule "usbd-serial"]
+	path = usbd-serial
+	url = https://github.com/mattico/usbd-serial
