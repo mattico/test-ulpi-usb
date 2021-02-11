@@ -1,15 +1,8 @@
 #![no_std]
 #![no_main]
-#![feature(alloc_error_handler)]
 
-extern crate alloc;
 extern crate defmt_rtt;
 extern crate panic_probe;
-
-#[global_allocator]
-static ALLOCATOR: alloc_cortex_m::CortexMHeap = alloc_cortex_m::CortexMHeap::empty();
-
-use alloc::string::ToString;
 
 use stm32h7xx_hal::gpio::*;
 use stm32h7xx_hal::hal::digital::v2::*;
@@ -25,9 +18,6 @@ static mut EP_MEMORY: [u32; 1024] = [0; 1024];
 
 #[cortex_m_rt::entry]
 fn main() -> ! {
-    let start = cortex_m_rt::heap_start() as usize;
-    unsafe { ALLOCATOR.init(start, 1024 * 10) }
-
     let dp = stm32::Peripherals::take().unwrap();
     let _cp = stm32::CorePeripherals::take().unwrap();
 
@@ -159,7 +149,7 @@ fn main() -> ! {
     );
 
     let mut old_state = device.state();
-    let mut iters = 0u32;
+    let mut last_print = us_timer::timestamp();
 
     loop {
         let new_data = device.poll(&mut [&mut winusb, &mut cdc]);
@@ -206,16 +196,15 @@ fn main() -> ! {
             Err(e) => defmt::error!("read() -> {:?}", defmt::Debug2Format(&e)),
         }
 
-        if iters % 1000_000 == 0 {
-            defmt::info!("writing {}", iters);
-            let data = iters.to_string();
-            match cdc.write(data.as_bytes()) {
-                Ok(n) => defmt::debug!("write({}) -> {}", data.len(), n),
-                Err(e) => defmt::error!("write({}) -> {:?}", data.len(), defmt::Debug2Format(&e)),
+        let now = us_timer::timestamp();
+        if now - last_print >= 1000_000 {
+            last_print = now;
+            defmt::info!("writing {}", now);
+            match cdc.write(&now.to_le_bytes()) {
+                Ok(n) => defmt::debug!("write(8) -> {}", n),
+                Err(e) => defmt::error!("write(8) -> {:?}", defmt::Debug2Format(&e)),
             }
         }
-
-        iters = iters.wrapping_add(1);
     }
 }
 
@@ -226,15 +215,10 @@ fn defmt_panic() -> ! {
 
 #[cortex_m_rt::exception]
 fn HardFault(ef: &cortex_m_rt::ExceptionFrame) -> ! {
-    defmt::panic!("Hard Fault: {=str}", alloc::format!("{:#?}", ef));
+    defmt::panic!("Hard Fault: {:?}", defmt::Debug2Format(&ef));
 }
 
 #[cortex_m_rt::exception]
 fn DefaultHandler(irqn: i16) {
     defmt::panic!("DefaultHandler IRQn: {=i16}", irqn);
-}
-
-#[alloc_error_handler]
-fn alloc_error_handler(layout: core::alloc::Layout) -> ! {
-    panic!("Unable to allocate {} bytes", layout.size());
 }
