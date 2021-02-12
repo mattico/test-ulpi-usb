@@ -11,6 +11,10 @@ alloc-cortex-m = "0.4.1"
 usb-device = "0.2.5"
 cortex-m = "0.7.1"
 
+[dependencies.umm-malloc]
+version = "0.1.2"
+features = ["sync", "cortex-m"]
+
 [dependencies.stm32h7xx-hal]
 features = ["stm32h743v", "rt", "usb_hs"]
 git = "https://github.com/mattico/stm32h7xx-hal"

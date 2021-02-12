@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
+#![feature(alloc_error_handler, default_alloc_error_handler)]
 
+extern crate alloc;
 extern crate defmt_rtt;
 extern crate panic_probe;
 
@@ -18,6 +20,8 @@ static mut EP_MEMORY: [u32; 1024] = [0; 1024];
 
 #[cortex_m_rt::entry]
 fn main() -> ! {
+    unsafe { umm_malloc::init(cortex_m_rt::heap_start() as usize, 1024 * 10); }
+
     let dp = stm32::Peripherals::take().unwrap();
     let mut cp = stm32::CorePeripherals::take().unwrap();
 
@@ -144,12 +148,18 @@ fn main() -> ! {
         );
     }
 
-    let mut old_state = device.state();
+    let mut state = device.state();
+    let mut rts = cdc.rts();
+    let mut dtr = cdc.dtr();
     let mut last_print = us_timer::timestamp();
 
     loop {
+        if device.poll(&mut [&mut winusb, &mut cdc]) {
+            usb_led.toggle().unwrap();
+        }
+
         let new_state = device.state();
-        if new_state != old_state {
+        if new_state != state {
             match new_state {
                 UsbDeviceState::Default => {
                     usb_led.set_high().unwrap();
@@ -169,10 +179,18 @@ fn main() -> ! {
                 }
             }
         }
-        old_state = new_state;
+        state = new_state;
 
-        if device.poll(&mut [&mut winusb, &mut cdc]) {
-            usb_led.toggle().unwrap();
+        let new_rts = cdc.rts();
+        if new_rts != rts {
+            defmt::info!("RTS: {}", new_rts);
+            rts = new_rts;
+        }
+
+        let new_dtr = cdc.dtr();
+        if new_dtr != dtr {
+            defmt::info!("DTR: {}", new_dtr);
+            dtr = new_dtr;
         }
 
         let mut buf = [0u8; 64];
@@ -191,10 +209,11 @@ fn main() -> ! {
         }
 
         let now = us_timer::timestamp();
-        if now - last_print >= 1000_000 && new_state == UsbDeviceState::Configured {
+        if dtr && now - last_print >= 1000_000 {
             last_print = now;
             defmt::info!("writing {}", now);
-            match cdc.write(&now.to_le_bytes()) {
+            let now = alloc::format!("{}\r\n", now);
+            match cdc.write(&now.as_bytes()) {
                 Ok(n) => defmt::debug!("write(8) -> {}", n),
                 Err(e) => defmt::error!("write(8) -> {:?}", defmt::Debug2Format(&e)),
             }
